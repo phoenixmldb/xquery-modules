@@ -1,0 +1,32 @@
+# Service settings
+---
+name: orders   # a comment
+version: 1.20
+port: 0x1F90
+enabled: true
+missing: ~
+"quoted key": 'it''s here'
+url: http://example.com:8080/a#b
+servers:
+  - host: alpha
+    tags: [web, "eu-1", 3]
+  - host: beta
+    tags: []
+limits: {cpu: 2, memory: 512Mi, note: }
+paths:
+- /a
+- /b
+script: |
+  echo one
+  echo two
+
+summary: >-
+  folded
+  text
+
+  new paragraph
+nested:
+  - - x
+    - y
+  -
+    deep: 1

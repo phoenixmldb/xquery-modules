@@ -106,6 +106,65 @@ declare function pj:to-xml($json as item()?) as document-node() {
   json-to-xml(serialize($json, map { 'method': 'json' }))
 };
 
+(:~
+ : All values of the field $key at any depth: in maps, in arrays, and in maps
+ : inside arrays. Example: pj:find($order, "price")
+ :)
+declare function pj:find($json as item()*, $key as xs:string) as item()* {
+  for $i in $json
+  return
+    typeswitch ($i)
+      case map(*) return (
+        $i($key),
+        for $k in map:keys($i) return pj:find($i($k), $key))
+      case array(*) return pj:find($i?*, $key)
+      default return ()
+};
+
+(:~
+ : A map from each dotted path to its value, for every value that is not a map
+ : or an array. An array position is a step from 1.
+ : Example: map { "items.1.name": "pen", "items.1.price": 2.5, ... }
+ :)
+declare function pj:flatten($json as item()?) as map(xs:string, item()*) {
+  map:merge(pj:flatten-entries($json, ()))
+};
+
+(:~ Each record with only the fields in $fields. A missing field stays missing. :)
+declare function pj:pick($records as map(*)*, $fields as xs:string*) as map(*)* {
+  for $r in $records
+  return map:merge(for $f in $fields where map:contains($r, $f) return map:entry($f, $r($f)))
+};
+
+(:~
+ : The records in order of the value of field $field, smallest first. Records
+ : without the field come last. The values must be of one kind (all numbers, or
+ : all strings).
+ :)
+declare function pj:sort-by($records as map(*)*, $field as xs:string) as map(*)* {
+  pj:sort-by($records, $field, false())
+};
+
+(:~ The records in order of field $field; $descending true() gives largest first. :)
+declare function pj:sort-by($records as map(*)*, $field as xs:string,
+                            $descending as xs:boolean) as map(*)* {
+  if ($descending)
+  then for $r in $records order by data($r($field))[1] descending empty least return $r
+  else for $r in $records order by data($r($field))[1] ascending empty greatest return $r
+};
+
+declare %private function pj:flatten-entries($v as item()*, $path as xs:string?) as map(*)* {
+  typeswitch ($v)
+    case map(*) return
+      for $k in map:keys($v)
+      return pj:flatten-entries($v($k), string-join(($path, $k), '.'))
+    case array(*) return
+      for $i in 1 to array:size($v)
+      return pj:flatten-entries(array:get($v, $i), string-join(($path, string($i)), '.'))
+    default return
+      if (exists($path)) then map:entry($path, $v) else ()
+};
+
 declare %private function pj:csv-value($v as item()*) as xs:string {
   if (empty($v)) then ''
   else if ($v instance of map(*) or $v instance of array(*))

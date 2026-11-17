@@ -21,9 +21,11 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
-      - name: Install xquery4
+      - name: Install xquery4 and xslt
         shell: bash
-        run: dotnet tool install xquery4 --version "$(cat XQUERY4_VERSION)" --tool-path "$RUNNER_TEMP/tools"
+        run: |
+          dotnet tool install xquery4 --version "$(cat TOOLS_VERSION)" --tool-path "$RUNNER_TEMP/tools"
+          dotnet tool install xslt --version "$(cat TOOLS_VERSION)" --tool-path "$RUNNER_TEMP/tools"
       - name: Run the module tests
         shell: bash
-        run: ./scripts/test.sh "$RUNNER_TEMP/tools/xquery"
+        run: ./scripts/test.sh "$RUNNER_TEMP/tools/xquery" "$RUNNER_TEMP/tools/xslt"

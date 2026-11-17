@@ -1,0 +1,9 @@
+--
+/catalog[1]/product[1]/price[1]/text()[1]
+/catalog[1]/product[2]/@category
+/catalog[1]/product[2]/name[1]
+/catalog[1]/product[2]/price[1]
+/catalog[1]/product[2]/tag[1]
+/catalog[1]/product[2]/tag[2]
+/catalog[1]/product[3]
+/catalog[1]/x:note[1]
