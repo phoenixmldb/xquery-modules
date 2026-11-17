@@ -15,12 +15,13 @@ for q in "$root"/tests/*/*.xq; do
   # Run from the test's directory, so the module import paths and static-base-uri() are stable.
   # Line ends are normalized, so the same expected files work on Windows.
   actual="$(cd "$(dirname "$q")" && "$XQ" -f "$(basename "$q")" </dev/null 2>&1 | tr -d '\r')"
-  if [ "$actual" == "$(cat "$expected")" ]; then
+  want="$(tr -d '\r' < "$expected")"
+  if [ "$actual" == "$want" ]; then
     pass=$((pass + 1))
   else
     fail=$((fail + 1))
     echo "FAIL $name"
-    diff <(cat "$expected") <(printf '%s\n' "$actual") | sed 's/^/    /'
+    diff <(printf '%s\n' "$want") <(printf '%s\n' "$actual") | sed 's/^/    /'
   fi
 done
 
