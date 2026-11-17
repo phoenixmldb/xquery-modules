@@ -1,31 +1,42 @@
-# PhoeniXML XQuery modules
+# PhoeniXML XQuery and XSLT modules
 
-XQuery 3.1 library modules for everyday work with JSON and XML. They are plain XQuery: they run
-on the `xquery4` tool, the PhoenixmlDb XQuery engine and other XQuery 3.1 processors.
+Library modules for everyday work with JSON, XML, CSV and YAML. They are plain XQuery 3.1 and
+XSLT 3.0: they run on the `xquery` and `xslt` tools, the PhoenixmlDb engines and other
+XQuery 3.1 and XSLT 3.0 processors.
 
-| Module | Namespace | File |
-|---|---|---|
-| JSON | `https://phoenixml.dev/modules/json` | [`modules/json.xqm`](modules/json.xqm) |
-| XML | `https://phoenixml.dev/modules/xml` | [`modules/xml.xqm`](modules/xml.xqm) |
+| Module | Language | Namespace | File |
+|---|---|---|---|
+| JSON (`pj`) | XQuery | `https://phoenixml.dev/modules/json` | [`modules/json.xqm`](modules/json.xqm) |
+| XML (`px`) | XQuery | `https://phoenixml.dev/modules/xml` | [`modules/xml.xqm`](modules/xml.xqm) |
+| CSV (`pc`) | XQuery | `https://phoenixml.dev/modules/csv` | [`modules/csv.xqm`](modules/csv.xqm) |
+| Report (`pr`) | XQuery | `https://phoenixml.dev/modules/report` | [`modules/report.xqm`](modules/report.xqm) |
+| JSON to XML (`jx`) | XSLT | `https://phoenixml.dev/modules/xslt/json` | [`xslt/json.xsl`](xslt/json.xsl) |
+| YAML (`yx`) | XSLT | `https://phoenixml.dev/modules/xslt/yaml` | [`xslt/yaml.xsl`](xslt/yaml.xsl) |
 
 ## Use
 
-Import a module from a release tag. The URL of a tag does not change.
+Import a module by the URL of a release. The file at a version URL does not change.
 
 ```xquery
 import module namespace pj = "https://phoenixml.dev/modules/json"
-  at "https://raw.githubusercontent.com/phoenixmldb/xquery-modules/v1.0.0/modules/json.xqm";
+  at "https://phoenixml.dev/modules/1.1.0/json.xqm";
 
 let $orders := pj:load(("data/a.json", "data/b.json"), static-base-uri())
 return pj:select($orders, "items.*.name")
 ```
 
-Or download the `.xqm` file and import it by a local path.
+```xml
+<xsl:import href="https://phoenixml.dev/modules/1.1.0/yaml.xsl"/>
+```
+
+The same files are on GitHub at
+`https://raw.githubusercontent.com/phoenixmldb/xquery-modules/v1.1.0/<path>`. Or download a file
+and import it by a local path.
 
 **Relative paths.** A relative path in a library module resolves against the module's location,
 not against your query. The `load` functions therefore take your query's base URI as a second
 argument: `pj:load($paths, static-base-uri())`. With one argument they take absolute URIs only, and
-a relative path raises `pj:relative-uri` (or `px:relative-uri`).
+a relative path raises `pj:relative-uri` (or `px:relative-uri`, `pc:relative-uri`).
 
 **Resource policy.** A host that runs queries under a `ResourcePolicy` must allow the module URL
 for import, and the data files for reading.
@@ -37,10 +48,14 @@ for import, and the data files for reading.
 | `pj:load($uris)` | Each JSON file, parsed. The URIs must be absolute. |
 | `pj:load($paths, $base)` | Each JSON file, parsed. Paths resolve against `$base`. |
 | `pj:select($json, $path)` | Values at a dotted path. A step is a key, `*` (all members or values), or an array position from 1: `"items.*.name"`, `"items.2.price"`. |
+| `pj:find($json, $key)` | All values of field `$key` at any depth. |
+| `pj:flatten($json)` | A map from each dotted path (`"items.1.name"`) to its value. |
 | `pj:records($json)` | All array members, with nested arrays flattened. |
+| `pj:pick($records, $fields)` | Each record with only the fields in `$fields`. |
+| `pj:sort-by($records, $field)` | The records in order of a field, smallest first; `pj:sort-by($records, $field, true())` gives largest first. Records without the field come last. |
 | `pj:group-by($records, $key)` | A map from each value of field `$key` to an array of its records. |
 | `pj:to-csv($records, $fields)` | CSV text with a header row. Values with a comma, quote or line break are quoted; maps and arrays are written as JSON. |
-| `pj:to-xml($json)` | The W3C XML representation (`fn:json-to-xml`). |
+| `pj:to-xml($json)` | The W3C XML representation (`fn:json-to-xml`). For readable XML, see `jx:to-xml`. |
 
 ```xquery
 (: Items over 3, from two files, as CSV :)
@@ -54,31 +69,120 @@ return pj:to-csv($items[?price > 3], ("name", "price"))
 |---|---|
 | `px:load($uris)` | Each XML document. The URIs must be absolute. |
 | `px:load($paths, $base)` | Each XML document. Paths resolve against `$base`. |
+| `px:outline($node)` | The element structure: one line for each element path, with counts and attribute names. Use it to explore a file you do not know. |
 | `px:to-json($element)` | A JSON-ready value: `"@name"` for attributes, the local name for child elements (an array when a name repeats), `"#text"` for text. An element with no attributes and no children gives its string value. |
 | `px:to-csv($elements, $fields)` | CSV text with a header row. A field is a child element name or `@attribute`. |
 | `px:strip-namespaces($node)` | A copy with local names only. |
 | `px:path($node)` | A readable path, for example `/catalog[1]/product[2]/@id`. |
+| `px:diff($a, $b)` | The paths where two nodes differ (names, attributes, text, children by position). Whitespace-only text is ignored. |
 | `px:count-by($items, $key)` | A map from each key to its count. `$key` is a function. |
 
 ```xquery
-(: Products by category, then the catalog as JSON :)
-let $doc := px:load("catalog.xml", static-base-uri())
-return (
-  px:count-by($doc//product, function($p) { string($p/@category) }),
-  serialize(px:to-json($doc/catalog), map { "method": "json" })
-)
+(: What is in this file? :)
+px:outline(px:load("catalog.xml", static-base-uri()))
 ```
+
+```
+catalog (1)
+  product (3) @category @id
+    name (3)
+    price (3)
+    tag (2)
+  x:note (1)
+    b (1)
+```
+
+## CSV functions (`pc`)
+
+The parser follows RFC 4180: a quoted field can hold the separator, line breaks and quotes (`""`).
+Blank lines are skipped. All values are strings; cast them where you need numbers.
+
+| Function | Result |
+|---|---|
+| `pc:load($uris)` / `pc:load($paths, $base)` | Each CSV file with a header row, as records (maps from header name to value). |
+| `pc:parse($text)` / `pc:parse($text, $separator)` | Records from CSV text with a header row. A missing value is `""`. |
+| `pc:rows($text)` / `pc:rows($text, $separator)` | Each row as an array of strings, with no header handling. |
+| `pc:header($text)` | The header names, in column order. |
+| `pc:to-xml($records, $fields)` | `<csv><row><name>…</name>…</row></csv>`. A field name that is not an XML name gives `<field name="…">`. |
+
+```xquery
+let $orders := pc:load("orders.csv", static-base-uri())
+return sum($orders ! xs:decimal(?total))
+```
+
+## Report functions (`pr`)
+
+| Function | Result |
+|---|---|
+| `pr:stats($values)` | `map { "count", "sum", "min", "max", "avg" }` of the values that are numbers. |
+| `pr:table($records, $fields)` | A text table with aligned columns, for terminal output. A record is a map or an element. |
+
+```xquery
+pr:table(pj:load("a.json", static-base-uri())?items?*, ("name", "price"))
+```
+
+```
+name  price
+----  -----
+pen   2.5
+ink   7
+```
+
+## XSLT: JSON and YAML to XML
+
+Both give the same readable XML form:
+
+- an object member gives an element named by its key; a key that is not an XML name gives
+  `<entry key="…">`;
+- an array gives one `<item>` child for each member;
+- a string, number or boolean gives its text; null gives an empty element;
+- member order is kept.
+
+| Function | Result |
+|---|---|
+| `jx:to-xml($json, $root)` | JSON text as readable XML, with a root element named `$root`. |
+| `jx:from-w3c($element, $root)` | The result of `fn:json-to-xml` as readable XML. |
+| `yx:to-xml($yaml, $root)` | YAML text as readable XML. |
+| `yx:to-json($yaml)` | YAML text as JSON text. |
+| `yx:parse($yaml)` | YAML text as maps and arrays, as `parse-json` gives them. |
+| `yx:to-w3c($yaml)` | YAML text as the W3C XML representation of JSON. |
+
+```xml
+<xsl:stylesheet version="3.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+    xmlns:yx="https://phoenixml.dev/modules/xslt/yaml">
+  <xsl:import href="https://phoenixml.dev/modules/1.1.0/yaml.xsl"/>
+  <xsl:template name="xsl:initial-template">
+    <xsl:sequence select="yx:to-xml(unparsed-text('config.yaml'), 'config')"/>
+  </xsl:template>
+</xsl:stylesheet>
+```
+
+From the command line, `xslt/json-to-xml.xsl` and `xslt/yaml-to-xml.xsl` convert one file:
+
+```bash
+xslt -it main yaml-to-xml.xsl -p href="$PWD/config.yaml" -p root=config
+```
+
+A relative `href` resolves against the stylesheet's location, so pass an absolute path.
+
+**YAML support.** One document with block mappings and sequences, plain and quoted scalars, flow
+collections (`[a, b]`, `{a: 1}`), literal (`|`) and folded (`>`) block scalars, and comments.
+Plain scalars resolve as in the YAML 1.2 core schema (null, booleans, integers including `0x` and
+`0o`, floats). Anchors, aliases, tags, complex keys, several documents, and scalars or flow
+collections over more than one line raise `yx:unsupported`. Wrong indentation raises `yx:syntax`.
+Each error message gives the line number.
 
 ## Tests
 
 ```bash
 dotnet tool install -g xquery4
+dotnet tool install -g xslt
 ./scripts/test.sh
 ```
 
-Each `tests/<module>/<name>.xq` runs with the `xquery` tool, and its output must equal
-`<name>.expected`. CI runs the tests on Linux and Windows with the `xquery4` version in
-`XQUERY4_VERSION`.
+Each `tests/<module>/<name>.xq` runs with the `xquery` tool, and each `tests/xslt/<name>.xsl` runs
+with `xslt -it main`. The output must equal `<name>.expected`. CI runs the tests on Linux and
+Windows with the tool version in `TOOLS_VERSION`.
 
 ## License
 

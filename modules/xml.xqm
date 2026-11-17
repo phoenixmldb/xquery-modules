@@ -131,6 +131,69 @@ declare function px:count-by($items as item()*,
   )
 };
 
+(:~
+ : An outline of the element structure, to explore a file you do not know: one
+ : line for each distinct element path, indented by depth, with the number of
+ : elements on that path, then the attributes found there.
+ : Example line: "  product (3) @category @id"
+ :)
+declare function px:outline($node as node()) as xs:string {
+  string-join(
+    for $e in $node/descendant-or-self::*
+    let $p := string-join($e/ancestor-or-self::* ! name(.), '/')
+    group by $p
+    order by $e[1] ! px:position(.)
+    let $depth := count($e[1]/ancestor-or-self::*) - count($node/ancestor::*)
+    let $attrs := distinct-values($e/@* ! name(.))
+    return
+      string-join((for $i in 2 to $depth return '  '), '') ||
+      name($e[1]) || ' (' || count($e) || ')' ||
+      string-join(sort($attrs) ! (' @' || .), ''),
+    '&#10;')
+};
+
+(:~
+ : The paths (see px:path) where two nodes differ: element names, attribute
+ : values, text, and child nodes by position. Whitespace-only text is ignored.
+ : An empty result means the nodes are equal by these rules.
+ :)
+declare function px:diff($a as node(), $b as node()) as xs:string* {
+  if (px:node-kind-name($a) ne px:node-kind-name($b) or not(deep-equal(node-name($a), node-name($b))))
+  then px:path($a)
+  else if (($a instance of element() or $a instance of document-node()) and
+           ($b instance of element() or $b instance of document-node())) then (
+    for $n in distinct-values(($a/@*, $b/@*) ! name(.))
+    let $x := $a/@*[name(.) eq $n]
+    let $y := $b/@*[name(.) eq $n]
+    where not(string($x) eq string($y) and exists($x) eq exists($y))
+    return px:path(($x, $y)[1]),
+    let $ac := $a/node()[not(self::text() and normalize-space(.) eq '')]
+    let $bc := $b/node()[not(self::text() and normalize-space(.) eq '')]
+    for $i in 1 to max((count($ac), count($bc), 0))
+    return
+      if (empty($ac[$i])) then px:path($bc[$i])
+      else if (empty($bc[$i])) then px:path($ac[$i])
+      else px:diff($ac[$i], $bc[$i])
+  )
+  else if (string($a) ne string($b)) then px:path($a)
+  else ()
+};
+
+declare %private function px:node-kind-name($n as node()) as xs:string {
+  typeswitch ($n)
+    case document-node() return 'document'
+    case element() return 'element'
+    case attribute() return 'attribute'
+    case text() return 'text'
+    case comment() return 'comment'
+    case processing-instruction() return 'processing-instruction'
+    default return 'other'
+};
+
+declare %private function px:position($e as element()) as xs:integer {
+  count($e/preceding::*) + count($e/ancestor::*)
+};
+
 declare %private function px:csv-field($s as xs:string) as xs:string {
   if (matches($s, '[,"&#10;&#13;]'))
   then '"' || replace($s, '"', '""') || '"'

@@ -1,0 +1,6 @@
+items.1.name=pen
+items.1.price=2.5
+items.1.tags.1=office
+items.1.tags.2=ink
+items.2.name=ink
+items.2.price=7

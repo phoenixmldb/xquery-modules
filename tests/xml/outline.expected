@@ -1,0 +1,7 @@
+catalog (1)
+  product (3) @category @id
+    name (3)
+    price (3)
+    tag (2)
+  x:note (1)
+    b (1)
