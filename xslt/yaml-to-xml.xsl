@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
   Converts one YAML file to readable XML.
-    xslt -it main yaml-to-xml.xsl -p href="$PWD/config.yaml" -p root=config
-  A relative href resolves against this stylesheet's location, so pass an absolute path.
+    xslt -it main yaml-to-xml.xsl -p href="file://$PWD/config.yaml" -p root=config
+  href is a URI: a relative href, or a path without file://, resolves against this
+  stylesheet's location, so give a file:// URI (on Windows, file:///C:/data/file).
   Licensed under the Apache License, Version 2.0.
 -->
 <xsl:stylesheet version="3.0"

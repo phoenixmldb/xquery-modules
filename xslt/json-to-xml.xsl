@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
   Converts one JSON file to readable XML.
-    xslt -it main json-to-xml.xsl -p href="$PWD/data.json" -p root=data
-  A relative href resolves against this stylesheet's location, so pass an absolute path.
+    xslt -it main json-to-xml.xsl -p href="file://$PWD/data.json" -p root=data
+  href is a URI: a relative href, or a path without file://, resolves against this
+  stylesheet's location, so give a file:// URI (on Windows, file:///C:/data/file).
   Licensed under the Apache License, Version 2.0.
 -->
 <xsl:stylesheet version="3.0"

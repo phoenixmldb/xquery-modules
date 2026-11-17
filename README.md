@@ -160,10 +160,11 @@ Both give the same readable XML form:
 From the command line, `xslt/json-to-xml.xsl` and `xslt/yaml-to-xml.xsl` convert one file:
 
 ```bash
-xslt -it main yaml-to-xml.xsl -p href="$PWD/config.yaml" -p root=config
+xslt -it main https://phoenixml.dev/modules/1.1.0/yaml-to-xml.xsl -p href="file://$PWD/config.yaml" -p root=config
 ```
 
-A relative `href` resolves against the stylesheet's location, so pass an absolute path.
+`href` is a URI. A relative `href`, or a path without `file://`, resolves against the stylesheet's
+location, so give a `file://` URI (on Windows, `file:///C:/data/config.yaml`).
 
 **YAML support.** One document with block mappings and sequences, plain and quoted scalars, flow
 collections (`[a, b]`, `{a: 1}`), literal (`|`) and folded (`>`) block scalars, and comments.
