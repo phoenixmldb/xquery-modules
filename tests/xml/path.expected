@@ -1,0 +1,4 @@
+/
+/catalog[1]/product[2]/@id
+/catalog[1]/product[2]/tag[2]
+/catalog[1]/product[2]/tag[2]/text()[1]

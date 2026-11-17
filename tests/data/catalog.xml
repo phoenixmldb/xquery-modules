@@ -1,0 +1,6 @@
+<catalog xmlns:x="urn:x">
+  <product id="p1" category="tools"><name>Hammer</name><price>12.50</price></product>
+  <product id="p2" category="tools"><name>Saw</name><price>20</price><tag>new</tag><tag>sale</tag></product>
+  <product id="p3" category="paint"><name>Red, matte</name><price>8</price></product>
+  <x:note>check <b>stock</b></x:note>
+</catalog>

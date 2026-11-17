@@ -1,0 +1,29 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Install xquery4
+        shell: bash
+        run: dotnet tool install xquery4 --version "$(cat XQUERY4_VERSION)" --tool-path "$RUNNER_TEMP/tools"
+      - name: Run the module tests
+        shell: bash
+        run: ./scripts/test.sh "$RUNNER_TEMP/tools/xquery"
