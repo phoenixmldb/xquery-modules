@@ -27,7 +27,8 @@ declare namespace map = "http://www.w3.org/2005/xpath-functions/map";
  :)
 declare function pf:list($dir as xs:string, $base as xs:string?, $glob as xs:string,
                          $recurse as xs:boolean) as xs:string* {
-  let $folder := replace(resolve-uri($dir, $base), '([^/])$', '$1/')
+  let $uri := if (exists($base)) then resolve-uri($dir, $base) else resolve-uri($dir)
+  let $folder := replace($uri, '([^/])$', '$1/')
   for $u in uri-collection($folder || '?select=' || $glob || ';recurse=' ||
                            (if ($recurse) then 'yes' else 'no'))
   order by string($u)
